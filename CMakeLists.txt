@@ -3,19 +3,17 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.8)
 
 PROJECT(SDL2_image VERSION 2.0.4)
 
-set(SDL2_IMG_LIB "SDL2_image")
+set(SDL_IMG "SDL2_image")
 
-set(SDL2_IMG_VERSION_MAJOR 2)
-set(SDL2_IMG_VERSION_MINOR 0)
-set(SDL2_IMG_VERSION_PATCH 4)
+set(SDL_IMG_VERSION_MAJOR 2)
+set(SDL_IMG_VERSION_MINOR 0)
+set(SDL_IMG_VERSION_PATCH 4)
 
-set(SDL2_IMG_VERSION "${SDL2_IMG_VERSION_MAJOR}.${SDL2_IMG_VERSION_MINOR}.${SDL2_IMG_VERSION_PATCH}")
+set(SDL_IMG_VERSION "${SDL_IMG_VERSION_MAJOR}.${SDL_IMG_VERSION_MINOR}.${SDL_IMG_VERSION_PATCH}")
 
 set(ENABLE_DEFS "")
 
-set(CONFIG_DEBUG_POSTFIX "-dbg" CACHE STRING "")
-
-option(OPTION_BUILD_SHARED "Build SDL2_image as shared library (e.g. DLL, SO, etc.)" ON)
+set(CONFIG_DEBUG_POSTFIX "d" CACHE STRING "")
 
 #option(FEATURE_ENABLE_BMP "ENABLE_BMP" ON)
 #option(FEATURE_ENABLE_GIF "ENABLE_GIF" ON)
@@ -31,20 +29,12 @@ option(FEATURE_ENABLE_PNG "ENABLE_PNG" ON)
 #option(FEATURE_ENABLE_XPM "ENABLE_XPM" ON)
 #option(FEATURE_ENABLE_XV "ENABLE_XV" ON)
 
-
-if(OPTION_BUILD_SHARED)
-    add_library(${SDL2_IMG_LIB} SHARED)
-else()
-    add_library(${SDL2_IMG_LIB})
-endif()
-
-set_property(TARGET ${SDL2_IMG_LIB} PROPERTY DEBUG_POSTFIX ${CONFIG_DEBUG_POSTFIX})
+add_library(${SDL_IMG})
 
 find_package(SDL2 REQUIRED)
-target_link_libraries(
-    ${SDL2_IMG_LIB}
-    PRIVATE SDL2::SDL2
-)
+target_link_libraries(${SDL_IMG} PRIVATE SDL2::SDL2)
+
+set_property(TARGET ${SDL_IMG} PROPERTY DEBUG_POSTFIX ${CONFIG_DEBUG_POSTFIX})
 
 # if(FEATURE_ENABLE_BMP)
     # set(ENABLE_DEFS "${ENABLE_DEFS}" LOAD_BMP)
@@ -70,13 +60,10 @@ target_link_libraries(
 # endif()
 
 if(FEATURE_ENABLE_PNG)
-    set(ENABLE_DEFS "${ENABLE_DEFS}" LOAD_PNG)
+    list(APPEND ENABLE_DEFS LOAD_PNG)
 
-    find_package(PNG REQUIRED)
-    target_link_libraries(
-        ${SDL2_IMG_LIB}
-        PRIVATE PNG::PNG
-    )
+    find_package(PNG REQUIRED NAMES libpng16)
+    target_link_libraries(${SDL_IMG} PRIVATE PNG::png)
 endif()
 
 # if(FEATURE_ENABLE_PNM)
@@ -110,7 +97,7 @@ endif()
 # endif()
 
 target_sources(
-    ${SDL2_IMG_LIB}
+    ${SDL_IMG}
     PRIVATE
         IMG.c
         IMG_bmp.c
@@ -131,29 +118,27 @@ target_sources(
 )
 
 target_include_directories(
-    ${SDL2_IMG_LIB}
-    PRIVATE
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
-    PUBLIC
-        "$<INSTALL_INTERFACE:include>"
+    ${SDL_IMG}
+    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    PUBLIC $<INSTALL_INTERFACE:"include/SDL2">
 )
 
-target_compile_definitions(${SDL2_IMG_LIB} PRIVATE "${ENABLE_DEFS}")
+target_compile_definitions(${SDL_IMG} PRIVATE "${ENABLE_DEFS}")
 
-set(SDL2_IMG_PUBLIC_HEADERS "SDL_image.h")
-set_target_properties(${SDL2_IMG_LIB} PROPERTIES PUBLIC_HEADER "${SDL2_IMG_PUBLIC_HEADERS}")
+set(SDL_IMG_PUBLIC_HEADERS "SDL_image.h")
+set_target_properties(${SDL_IMG} PROPERTIES PUBLIC_HEADER "${SDL_IMG_PUBLIC_HEADERS}")
 
 install(
-    TARGETS ${SDL2_IMG_LIB}
-    EXPORT ${SDL2_IMG_LIB}-exports
-    LIBRARY DESTINATION "lib${LIB_SUFFIX}"
+    TARGETS ${SDL_IMG}
+    EXPORT ${SDL_IMG}-exports
     ARCHIVE DESTINATION "lib${LIB_SUFFIX}"
-    PUBLIC_HEADER DESTINATION "include/SDL2_image"
+    LIBRARY DESTINATION "lib${LIB_SUFFIX}"
     RUNTIME DESTINATION "bin"
+    PUBLIC_HEADER DESTINATION "include/SDL2"
 )
 
 if(APPLE)
-  set(PKG_PREFIX "SDL2_image.framework/Resources")
+    set(PKG_PREFIX "SDL2_image.framework/Resources")
 elseif(WIN32)
     set(PKG_PREFIX "cmake")
 else()
@@ -163,20 +148,20 @@ endif()
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     "${CMAKE_BINARY_DIR}/SDL2_image-config-version.cmake"
-    VERSION "${SDL2_IMG_VERSION}"
+    VERSION "${SDL_IMG_VERSION}"
     COMPATIBILITY AnyNewerVersion
 )
 
 install(
-    EXPORT ${SDL2_IMG_LIB}-exports
-    FILE ${SDL2_IMG_LIB}-targets.cmake
-    NAMESPACE ${SDL2_IMG_LIB}::
+    EXPORT ${SDL_IMG}-exports
+    FILE ${SDL_IMG}-targets.cmake
+    NAMESPACE SDL2::
     DESTINATION "${PKG_PREFIX}"
 )
 
 install(
     FILES
-      "${CMAKE_CURRENT_SOURCE_DIR}/SDL2_image-config.cmake"
-      "${CMAKE_BINARY_DIR}/SDL2_image-config-version.cmake"
+        "${CMAKE_CURRENT_SOURCE_DIR}/SDL2_image-config.cmake"
+        "${CMAKE_BINARY_DIR}/SDL2_image-config-version.cmake"
     DESTINATION "${PKG_PREFIX}"
 )
